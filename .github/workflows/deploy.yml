@@ -1,14 +1,12 @@
 name: Build and Deploy WAR to EC2
-
 on:
   push:
     branches:
       - uat-test
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    environment: DEV
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -25,10 +23,10 @@ jobs:
       - name: Debug SSH Key
         run: |
           if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
-            echo "❌ SSH KEY EMPTY"
+            echo "SSH KEY EMPTY"
             exit 1
           else
-            echo "✅ SSH KEY PRESENT"
+            echo "SSH KEY PRESENT"
           fi
 
       - name: Copy WAR to EC2
@@ -49,12 +47,9 @@ jobs:
           script: |
             echo "Stopping Tomcat"
             sudo systemctl stop tomcat9 || true
-
             echo "Cleaning old deployment"
             sudo rm -rf /var/lib/tomcat9/webapps/*
-
             echo "Deploying new WAR"
-            sudo cp /home/ubuntu/*.war /var/lib/tomcat9/webapps/
-
+            sudo cp /home/ubuntu/target/*.war /var/lib/tomcat9/webapps/
             echo "Starting Tomcat"
             sudo systemctl start tomcat9

@@ -3,7 +3,7 @@ name: Build and Deploy WAR to EC2
 on:
   push:
     branches:
-      - uat
+      - uat-test
 
 jobs:
   deploy:
@@ -39,7 +39,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           echo "Stopping Tomcat"
-          sudo systemctl stop tomcat || true
+          sudo systemctl stop tomcat9 || true
 
           echo "Cleaning old deployment"
           sudo rm -rf /var/lib/tomcat9/webapps/*
@@ -48,4 +48,4 @@ jobs:
           sudo cp /home/ubuntu/*.war /var/lib/tomcat9/webapps/
 
           echo "Starting Tomcat"
-          sudo systemctl start tomcat
+          sudo systemctl start tomcat9

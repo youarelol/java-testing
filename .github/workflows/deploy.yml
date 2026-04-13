@@ -11,42 +11,51 @@ jobs:
     environment: DEV
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Setup Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Build WAR
-      run: mvn clean package
+      - name: Build WAR
+        run: mvn clean package
 
-    - name: Copy WAR to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "target/*.war"
-        target: "/home/ubuntu/"
+      - name: Debug SSH Key
+        run: |
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "❌ SSH KEY EMPTY"
+            exit 1
+          else
+            echo "✅ SSH KEY PRESENT"
+          fi
 
-    - name: Deploy to Tomcat
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          echo "Stopping Tomcat"
-          sudo systemctl stop tomcat9 || true
+      - name: Copy WAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "target/*.war"
+          target: "/home/ubuntu/"
 
-          echo "Cleaning old deployment"
-          sudo rm -rf /var/lib/tomcat9/webapps/*
+      - name: Deploy to Tomcat
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Stopping Tomcat"
+            sudo systemctl stop tomcat9 || true
 
-          echo "Deploying new WAR"
-          sudo cp /home/ubuntu/*.war /var/lib/tomcat9/webapps/
+            echo "Cleaning old deployment"
+            sudo rm -rf /var/lib/tomcat9/webapps/*
 
-          echo "Starting Tomcat"
-          sudo systemctl start tomcat9
+            echo "Deploying new WAR"
+            sudo cp /home/ubuntu/*.war /var/lib/tomcat9/webapps/
+
+            echo "Starting Tomcat"
+            sudo systemctl start tomcat9
